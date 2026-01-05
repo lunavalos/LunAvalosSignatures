@@ -316,7 +316,7 @@ export default function Dashboard({ userCompany, companies }) {
                                 <h3 className="text-lg font-bold text-gray-900">Vista Previa</h3>
                                 <PrimaryButton
                                     onClick={copyToClipboard}
-                                    className="transition-colors bg-primary hover:bg-red-700"
+                                    className="transition-colors bg-primary hover:bg-blue-700"
                                 >
                                     {copied ? '¡Copiado!' : 'Copiar Firma'}
                                 </PrimaryButton>
