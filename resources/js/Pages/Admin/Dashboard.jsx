@@ -69,15 +69,26 @@ export default function AdminDashboard({ users, companies }) {
     const submitCompany = (e) => {
         e.preventDefault();
         if (editingCompany) {
-            companyForm.transform(data => ({
-                ...data,
-                _method: 'patch'
-            })).post(route('admin.companies.update', editingCompany.id), {
-                onSuccess: () => {
-                    setEditingCompany(null);
-                    companyForm.reset();
-                },
-            });
+            if (companyForm.data.logo) {
+                // If updating logo: POST with _method: 'patch' (Multipart)
+                companyForm.transform(data => ({
+                    ...data,
+                    _method: 'patch'
+                })).post(route('admin.companies.update', editingCompany.id), {
+                    onSuccess: () => {
+                        setEditingCompany(null);
+                        companyForm.reset();
+                    },
+                });
+            } else {
+                // If NOT updating logo: Standard PATCH (JSON)
+                companyForm.patch(route('admin.companies.update', editingCompany.id), {
+                    onSuccess: () => {
+                        setEditingCompany(null);
+                        companyForm.reset();
+                    },
+                });
+            }
         } else {
             companyForm.post(route('admin.companies.store'), {
                 onSuccess: () => companyForm.reset(),
@@ -355,7 +366,7 @@ export default function AdminDashboard({ users, companies }) {
 
                                     <div className="pt-4 flex gap-2">
                                         <PrimaryButton className="flex-1 justify-center" disabled={companyForm.processing}>
-                                            {editingCompany ? 'Actualizar Empresa' : 'Crear Empresa'}
+                                            {editingCompany ? 'Actualizar Empresa ahora' : 'Crear Empresa'}
                                         </PrimaryButton>
                                         {editingCompany && (
                                             <button

@@ -68,8 +68,8 @@ export default function CompanySelect({ value, onChange, companies = [] }) {
                                     setIsOpen(false);
                                 }}
                                 className={`w-full px-4 py-3 flex items-center gap-3 transition-colors duration-150 ease-in-out ${value === company.id
-                                        ? 'bg-primary/10'
-                                        : 'bg-white hover:bg-gray-50'
+                                    ? 'bg-primary/10'
+                                    : 'bg-white hover:bg-gray-50'
                                     }`}
                             >
                                 {company.logo ? (
