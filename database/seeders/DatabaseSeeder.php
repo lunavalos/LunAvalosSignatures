@@ -29,12 +29,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Admin User
-        \App\Models\User::create([
-            'name' => 'Admin LunAvalos',
-            'username' => 'admin',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'role' => 'admin',
-            'company_id' => null,
-        ]);
+        // Admin User
+        $this->call(AdminUserSeeder::class);
     }
 }
