@@ -366,7 +366,7 @@ export default function AdminDashboard({ users, companies }) {
 
                                     <div className="pt-4 flex gap-2">
                                         <PrimaryButton className="flex-1 justify-center" disabled={companyForm.processing}>
-                                            {editingCompany ? 'Actualizar Empresa ahora' : 'Crear Empresa'}
+                                            {editingCompany ? 'Actualizar Empresa' : 'Crear Empresa'}
                                         </PrimaryButton>
                                         {editingCompany && (
                                             <button

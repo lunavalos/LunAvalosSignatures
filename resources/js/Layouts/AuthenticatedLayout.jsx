@@ -90,13 +90,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </Dropdown.Trigger>
 
                                     <Dropdown.Content>
-                                        {auth.user.role === 'admin' && (
-                                            <Dropdown.Link
-                                                href={route('profile.edit')}
-                                            >
-                                                Perfil
-                                            </Dropdown.Link>
-                                        )}
+
                                         <Dropdown.Link
                                             href={route('logout')}
                                             method="post"
@@ -186,11 +180,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
 
                         <div className="mt-3 space-y-1">
-                            {auth.user.role === 'admin' && (
-                                <ResponsiveNavLink href={route('profile.edit')}>
-                                    Perfil
-                                </ResponsiveNavLink>
-                            )}
+
                             <ResponsiveNavLink
                                 method="post"
                                 href={route('logout')}

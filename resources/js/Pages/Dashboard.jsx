@@ -316,7 +316,7 @@ export default function Dashboard({ userCompany, companies }) {
                                 <h3 className="text-lg font-bold text-gray-900">Vista Previa</h3>
                                 <PrimaryButton
                                     onClick={copyToClipboard}
-                                    className="transition-colors bg-primary hover:bg-blue-700"
+                                    className="transition-colors bg-primary hover:bg-blue-600"
                                 >
                                     {copied ? '¡Copiado!' : 'Copiar Firma'}
                                 </PrimaryButton>
@@ -391,7 +391,7 @@ export default function Dashboard({ userCompany, companies }) {
                                 <div className="mt-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
                                     <p className="text-xs text-blue-800 leading-relaxed italic">
                                         También puedes instalar esta firma automáticamente en Outlook para Windows.
-                                        Descarga el archivo, descomprímelo y ejecuta el archivo <strong>instalar_firma.bat</strong>.
+                                        Con Outlook cerrado, descarga el archivo, descomprímelo y ejecuta el archivo <strong>instalar_firma.bat</strong>.
                                         Luego abre Outlook y selecciona la firma desde:<br />
                                         <span className="font-semibold">Archivo → Opciones → Correo → Firmas.</span>
                                     </p>

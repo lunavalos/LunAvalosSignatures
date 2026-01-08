@@ -5,9 +5,9 @@ export default function DynamicSignature({ html, data }) {
     const placeholders = {
         name: data.name || 'Nombre del Empleado',
         position: data.position || 'Puesto / Cargo',
-        phone: data.phone || '0000000000',
-        email: data.email || 'correo@ejemplo.com',
-        photo: data.photoUrl || 'https://syacsa.com/wp-content/uploads/2023/06/user-placeholder.png'
+        phone: data.phone || '1234567890',
+        email: data.email || 'nombre@empresa.com',
+        photo: data.photoUrl || 'https://maguissa.com/wp-content/uploads/profile-fallback.jpeg'
     };
 
     // Replace placeholders in the HTML string
@@ -25,3 +25,5 @@ export default function DynamicSignature({ html, data }) {
         />
     );
 }
+
+
