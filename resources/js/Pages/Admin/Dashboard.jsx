@@ -1,11 +1,17 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, usePage, useForm } from '@inertiajs/react';
+import { Head, usePage, useForm, router } from '@inertiajs/react';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import InputError from '@/Components/InputError';
 import CompanySelect from '@/Components/CompanySelect';
+import ConfirmationModal from '@/Components/ConfirmationModal';
 import { useState } from 'react';
+import Editor from 'react-simple-code-editor';
+import { highlight, languages } from 'prismjs/components/prism-core';
+import 'prismjs/components/prism-markup';
+import 'prismjs/themes/prism.css';
+
 
 export default function AdminDashboard({ users, companies }) {
     const { auth, flash } = usePage().props;
@@ -32,6 +38,11 @@ export default function AdminDashboard({ users, companies }) {
     const [editingUser, setEditingUser] = useState(null);
     const [editingCompany, setEditingCompany] = useState(null);
     const [filterCompanyId, setFilterCompanyId] = useState('');
+
+    // Modal state
+    const [confirmingDeletion, setConfirmingDeletion] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
+    const [deleteType, setDeleteType] = useState(null); // 'user' or 'company'
 
     const submitUser = (e) => {
         e.preventDefault();
@@ -60,35 +71,44 @@ export default function AdminDashboard({ users, companies }) {
         });
     };
 
-    const deleteUser = (id) => {
-        if (confirm('¿Estás seguro de eliminar este usuario?')) {
-            destroyUser(route('admin.users.destroy', id));
-        }
+    const confirmDeleteUser = (id) => {
+        setItemToDelete(id);
+        setDeleteType('user');
+        setConfirmingDeletion(true);
+    };
+
+    const deleteUser = () => {
+        if (!itemToDelete) return;
+        destroyUser(route('admin.users.destroy', itemToDelete), {
+            onSuccess: () => {
+                setConfirmingDeletion(false);
+                setItemToDelete(null);
+            }
+        });
     };
 
     const submitCompany = (e) => {
         e.preventDefault();
+        console.log('Submitting company form via router', companyForm.data);
+
         if (editingCompany) {
-            if (companyForm.data.logo) {
-                // If updating logo: POST with _method: 'patch' (Multipart)
-                companyForm.transform(data => ({
-                    ...data,
-                    _method: 'patch'
-                })).post(route('admin.companies.update', editingCompany.id), {
-                    onSuccess: () => {
-                        setEditingCompany(null);
-                        companyForm.reset();
-                    },
-                });
-            } else {
-                // If NOT updating logo: Standard PATCH (JSON)
-                companyForm.patch(route('admin.companies.update', editingCompany.id), {
-                    onSuccess: () => {
-                        setEditingCompany(null);
-                        companyForm.reset();
-                    },
-                });
-            }
+            router.post(route('admin.companies.update', editingCompany.id), {
+                ...companyForm.data,
+                _method: 'patch',
+            }, {
+                forceFormData: true, // Force multipart/form-data for logo
+                onStart: () => {
+                    companyForm.clearErrors();
+                },
+                onSuccess: () => {
+                    setEditingCompany(null);
+                    companyForm.reset();
+                },
+                onError: (errs) => {
+                    // Manually set errors back to form
+                    Object.keys(errs).forEach(key => companyForm.setError(key, errs[key]));
+                },
+            });
         } else {
             companyForm.post(route('admin.companies.store'), {
                 onSuccess: () => companyForm.reset(),
@@ -106,10 +126,20 @@ export default function AdminDashboard({ users, companies }) {
         });
     };
 
-    const deleteCompany = (id) => {
-        if (confirm('¿Estás seguro de eliminar esta empresa?')) {
-            companyForm.delete(route('admin.companies.destroy', id));
-        }
+    const confirmDeleteCompany = (id) => {
+        setItemToDelete(id);
+        setDeleteType('company');
+        setConfirmingDeletion(true);
+    };
+
+    const deleteCompany = () => {
+        if (!itemToDelete) return;
+        router.delete(route('admin.companies.destroy', itemToDelete), {
+            onSuccess: () => {
+                setConfirmingDeletion(false);
+                setItemToDelete(null);
+            }
+        });
     };
 
     const filteredUsers = filterCompanyId
@@ -291,7 +321,7 @@ export default function AdminDashboard({ users, companies }) {
                                                         Editar
                                                     </button>
                                                     <button
-                                                        onClick={() => deleteUser(user.id)}
+                                                        onClick={() => confirmDeleteUser(user.id)}
                                                         className="text-red-600 hover:text-red-800 font-medium"
                                                         disabled={user.id === auth.user.id}
                                                     >
@@ -350,14 +380,21 @@ export default function AdminDashboard({ users, companies }) {
 
                                     <div>
                                         <InputLabel htmlFor="signature_html" value="HTML de la Firma" />
-                                        <textarea
-                                            id="signature_html"
-                                            value={companyForm.data.signature_html}
-                                            onChange={e => companyForm.setData('signature_html', e.target.value)}
-                                            className="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm font-mono text-sm"
-                                            rows="10"
-                                            placeholder="Pega aquí el código HTML con {{name}}, {{position}}, {{phone}}, {{email}}, {{photo}}"
-                                        ></textarea>
+                                        <div className="mt-1 block w-full border border-gray-300 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary rounded-md shadow-sm bg-white overflow-hidden">
+                                            <Editor
+                                                value={companyForm.data.signature_html}
+                                                onValueChange={code => companyForm.setData('signature_html', code)}
+                                                highlight={code => highlight(code, languages.markup, 'markup')}
+                                                padding={10}
+                                                style={{
+                                                    fontFamily: '"Fira code", "Fira Mono", monospace',
+                                                    fontSize: 12,
+                                                    minHeight: '200px',
+                                                }}
+                                                className="min-h-[200px] outline-none"
+                                                placeholder="Pega aquí el código HTML con {{name}}, {{position}}, {{phone}}, {{email}}, {{photo}}"
+                                            />
+                                        </div>
                                         <p className="mt-2 text-xs text-gray-500">
                                             Variables soportadas: <code className="bg-gray-100 px-1">{"{{name}}"}</code>, <code className="bg-gray-100 px-1">{"{{position}}"}</code>, <code className="bg-gray-100 px-1">{"{{phone}}"}</code>, <code className="bg-gray-100 px-1">{"{{email}}"}</code>, <code className="bg-gray-100 px-1">{"{{photo}}"}</code>
                                         </p>
@@ -418,7 +455,7 @@ export default function AdminDashboard({ users, companies }) {
                                                         Editar
                                                     </button>
                                                     <button
-                                                        onClick={() => deleteCompany(company.id)}
+                                                        onClick={() => confirmDeleteCompany(company.id)}
                                                         className="text-red-600 hover:text-red-800 font-medium"
                                                     >
                                                         Eliminar
@@ -433,6 +470,17 @@ export default function AdminDashboard({ users, companies }) {
                     )}
                 </div>
             </div>
+
+            <ConfirmationModal
+                show={confirmingDeletion}
+                onClose={() => setConfirmingDeletion(false)}
+                onConfirm={deleteType === 'user' ? deleteUser : deleteCompany}
+                title={deleteType === 'user' ? 'Eliminar Usuario' : 'Eliminar Empresa'}
+                message={deleteType === 'user'
+                    ? '¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.'
+                    : '¿Estás seguro de que deseas eliminar esta empresa? Los usuarios asociados perderán su vinculación.'}
+                processing={processingUser || companyForm.processing}
+            />
         </AuthenticatedLayout>
     );
 }

@@ -29,13 +29,15 @@ class SignatureController extends Controller
                 'required',
                 'image',
                 'mimes:jpeg,png,jpg',
-                'dimensions:min_width=50,min_height=50' // Solo mínimo, sin máximo
+                'dimensions:min_width=50,min_height=50', // Solo mínimo, sin máximo
+                'max:2048' // Límite de 2MB
             ],
         ], [
             'photo.required' => 'La foto es obligatoria.',
             'photo.image' => 'El archivo debe ser una imagen.',
             'photo.mimes' => 'Solo se permiten imágenes JPEG, PNG o JPG.',
-            'photo.dimensions' => 'La imagen debe tener al menos 50x50 píxeles. Se recomienda usar imágenes de hasta 2MB y 2000x2000 píxeles para mejor rendimiento.',
+            'photo.dimensions' => 'La imagen debe tener al menos 50x50 píxeles.',
+            'photo.max' => 'La imagen no debe pesar más de 2MB.',
         ]);
 
         if ($request->hasFile('photo')) {

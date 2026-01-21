@@ -1,0 +1,23 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. BLOQUEO DE ARCHIVOS SENSIBLES
+    # Bloquea el acceso a .env, .git, archivos de configuración y bases de datos
+    <FilesMatch "^\.env|^\.git|^\.htaccess|^composer|^package|^web\.config">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+
+    # 2. BLOQUEO DE CARPETAS DEL NÚCLEO
+    # Evita que se listen o accedan a carpetas como app, config, storage, etc.
+    RewriteRule ^(app|bootstrap|config|database|lang|resources|routes|storage|tests|vendor)($|/) - [F,L]
+
+    # 3. REDIRECCIÓN ESTÁNDAR DE LARAVEL
+    # Maneja las rutas de la aplicación
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Desactivar el listado de directorios
+Options -Indexes

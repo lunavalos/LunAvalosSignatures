@@ -10,9 +10,8 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropUnique(['email']);
-            $table->dropColumn(['email', 'email_verified_at']);
+        Schema::table('signatures', function (Blueprint $table) {
+            $table->longText('cloud_url')->nullable()->change();
         });
     }
 
@@ -21,9 +20,8 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('email')->nullable()->after('name');
-            $table->timestamp('email_verified_at')->nullable()->after('email');
+        Schema::table('signatures', function (Blueprint $table) {
+            $table->string('cloud_url')->nullable()->change();
         });
     }
 };

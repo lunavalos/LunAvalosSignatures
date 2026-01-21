@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * ARCHIVO MODIFICADO PARA DESPLIEGUE "CONFINADO" EN public_html
+ * Úsalo si no puedes subir archivos fuera de public_html.
+ */
+
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+
+define('LARAVEL_START', microtime(true));
+
+// 1. Determinar si la aplicación está en modo mantenimiento
+if (file_exists($maintenance = __DIR__.'/storage/framework/maintenance.php')) {
+    require $maintenance;
+}
+
+// 2. Registrar el autoloader de Composer (Ruta corregida: ahora está en la misma carpeta)
+require __DIR__.'/vendor/autoload.php';
+
+// 3. Cargar el Bootstrap de Laravel (Ruta corregida: ahora está en la misma carpeta)
+/** @var Application $app */
+$app = require_once __DIR__.'/bootstrap/app.php';
+
+// 4. Procesar la solicitud
+$app->handleRequest(Request::capture());

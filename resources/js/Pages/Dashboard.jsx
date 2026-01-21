@@ -24,6 +24,7 @@ export default function Dashboard({ userCompany, companies }) {
         photoUrl: null
     });
 
+    const [previewData, setPreviewData] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [isGeneratingZip, setIsGeneratingZip] = useState(false);
     const previewRef = useRef(null);
@@ -71,45 +72,79 @@ export default function Dashboard({ userCompany, companies }) {
         }
     };
 
-    const handlePhotoChange = async (e) => {
+    const handlePhotoChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            // Enforce client-side 2MB limit as well
+            if (file.size > 2 * 1024 * 1024) {
+                alert('La imagen no debe pesar más de 2MB.');
+                return;
+            }
+
+            // Just store the file object and a local preview URL
+            // We don't upload yet
+            setForm(prev => ({
+                ...prev,
+                photo: file,
+                photoUrl: URL.createObjectURL(file)
+            }));
+        }
+    };
+
+    const handleGeneratePreview = async (e) => {
+        if (e) e.preventDefault();
+
+        if (!selectedCompany) {
+            alert('Por favor selecciona una empresa.');
+            return;
+        }
+
+        let finalPhotoUrl = form.photoUrl;
+
+        // If there's a new file selected (instance of File), we upload it now
+        if (form.photo instanceof File) {
             setUploading(true);
 
-            // Create FormData for upload
             const formData = new FormData();
-            formData.append('photo', file);
+            formData.append('photo', form.photo);
 
             try {
-                // Upload to server
-                const response = await fetch(route('signature.upload'), {
-                    method: 'POST',
-                    body: formData,
+                const response = await window.axios.post(route('signature.upload'), formData, {
                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Content-Type': 'multipart/form-data',
                     },
                 });
 
-
-                const data = await response.json();
-
-                if (data.success) {
+                if (response.data.success) {
+                    finalPhotoUrl = response.data.url;
+                    // Update form state with the persistent cloud/base64 URL
                     setForm(prev => ({
                         ...prev,
-                        photo: file,
-                        photoUrl: data.url
+                        photo: null, // Clear the File object since it's uploaded
+                        photoUrl: finalPhotoUrl
                     }));
                 } else {
-                    // Show server error message
-                    alert(data.message || 'Error al subir la imagen. Por favor intenta de nuevo.');
+                    alert(response.data.message || 'Error al subir la imagen.');
+                    setUploading(false);
+                    return;
                 }
             } catch (error) {
                 console.error('Upload failed:', error);
-                alert('Error al subir la imagen. Por favor intenta de nuevo.');
+                const message = error.response?.data?.message || 'Error al subir la imagen. Por favor intenta de nuevo.';
+                alert(message);
+                setUploading(false);
+                return;
             } finally {
                 setUploading(false);
             }
         }
+
+        // Update the preview data
+        setPreviewData({
+            ...form,
+            photoUrl: finalPhotoUrl,
+            companyId: selectedCompany
+        });
     };
 
     const copyToClipboard = () => {
@@ -303,9 +338,28 @@ export default function Dashboard({ userCompany, companies }) {
                                         {uploading ? 'Subiendo...' : (form.photoUrl ? 'Cambiar Foto' : 'Seleccionar Archivo')}
                                     </button>
                                     {form.photoUrl && (
-                                        <p className="text-xs text-green-600 mt-1">✓ Foto cargada correctamente</p>
+                                        <p className="text-xs text-green-600 mt-1">✓ Foto seleccionada</p>
                                     )}
                                     <p className="text-xs text-gray-400 mt-1">Tamaño recomendado: 70x70px o cuadrado.</p>
+                                </div>
+
+                                <div className="pt-4">
+                                    <PrimaryButton
+                                        type="button"
+                                        onClick={handleGeneratePreview}
+                                        className="w-full justify-center py-4 text-lg bg-green-600 hover:bg-green-700 h-auto"
+                                        disabled={uploading}
+                                    >
+                                        {uploading ? (
+                                            <span className="flex items-center gap-2">
+                                                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Subiendo foto...
+                                            </span>
+                                        ) : 'Generar Firma'}
+                                    </PrimaryButton>
                                 </div>
                             </div>
                         </div>
@@ -314,35 +368,37 @@ export default function Dashboard({ userCompany, companies }) {
                         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-8 sticky top-6 self-start">
                             <div className="flex justify-between items-center mb-6 border-b pb-2">
                                 <h3 className="text-lg font-bold text-gray-900">Vista Previa</h3>
-                                <PrimaryButton
-                                    onClick={copyToClipboard}
-                                    className="transition-colors bg-primary hover:bg-blue-600"
-                                >
-                                    {copied ? '¡Copiado!' : 'Copiar Firma'}
-                                </PrimaryButton>
+                                {previewData && (
+                                    <PrimaryButton
+                                        onClick={copyToClipboard}
+                                        className="transition-colors bg-primary hover:bg-blue-600"
+                                    >
+                                        {copied ? '¡Copiado!' : 'Copiar Firma'}
+                                    </PrimaryButton>
+                                )}
                             </div>
 
                             <div className="border border-gray-200 rounded p-4 bg-white overflow-auto flex flex-col items-center min-h-[200px] justify-center">
-                                {selectedCompany ? (
+                                {previewData ? (
                                     <div ref={previewRef}>
                                         {(() => {
-                                            const company = companies?.find(c => c.id === selectedCompany);
+                                            const company = companies?.find(c => c.id === previewData.companyId);
 
                                             // If company has custom HTML template, use DynamicSignature
                                             if (company?.signature_html) {
                                                 return (
                                                     <DynamicSignature
                                                         html={company.signature_html}
-                                                        data={form}
+                                                        data={previewData}
                                                     />
                                                 );
                                             }
 
                                             // Otherwise use hardcoded components based on company ID
-                                            if (company?.id === 1) {
-                                                return <SyacsaSignature {...form} />;
+                                            if (company?.id === 4) {
+                                                return <SyacsaSignature {...previewData} />;
                                             } else if (company?.id === 2) {
-                                                return <AbsoluteSignature {...form} />;
+                                                return <AbsoluteSignature {...previewData} />;
                                             }
 
                                             // Fallback for unknown companies
@@ -355,48 +411,52 @@ export default function Dashboard({ userCompany, companies }) {
                                     </div>
                                 ) : (
                                     <div className="text-gray-400 text-center italic py-10">
-                                        Selecciona una empresa para ver la vista previa
+                                        Haz clic en "Generar Firma" para ver la vista previa
                                     </div>
                                 )}
                             </div>
 
-                            <p className="mt-4 text-sm text-gray-500 text-center">
-                                Haz clic en "Copiar Firma" y pégala (Ctrl+V) en la configuración de tu correo.
-                            </p>
-
-                            <div className="mt-8 pt-6 border-t border-gray-100">
-                                <button
-                                    onClick={downloadOutlookZIP}
-                                    disabled={isGeneratingZip || !selectedCompany}
-                                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-primary text-primary font-bold rounded-xl hover:bg-primary/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
-                                >
-                                    {isGeneratingZip ? (
-                                        <>
-                                            <svg className="animate-spin h-5 w-5 mr-3 text-primary" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Generando...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                            </svg>
-                                            Generar firma para Outlook (Instalación automática)
-                                        </>
-                                    )}
-                                </button>
-
-                                <div className="mt-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
-                                    <p className="text-xs text-blue-800 leading-relaxed italic">
-                                        También puedes instalar esta firma automáticamente en Outlook para Windows.
-                                        Con Outlook cerrado, descarga el archivo, descomprímelo y ejecuta el archivo <strong>instalar_firma.bat</strong>.
-                                        Luego abre Outlook y selecciona la firma desde:<br />
-                                        <span className="font-semibold">Archivo → Opciones → Correo → Firmas.</span>
+                            {previewData && (
+                                <>
+                                    <p className="mt-4 text-sm text-gray-500 text-center">
+                                        Haz clic en "Copiar Firma" y pégala (Ctrl+V) en la configuración de tu correo.
                                     </p>
-                                </div>
-                            </div>
+
+                                    <div className="mt-8 pt-6 border-t border-gray-100">
+                                        <button
+                                            onClick={downloadOutlookZIP}
+                                            disabled={isGeneratingZip}
+                                            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-primary text-primary font-bold rounded-xl hover:bg-primary/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+                                        >
+                                            {isGeneratingZip ? (
+                                                <>
+                                                    <svg className="animate-spin h-5 w-5 mr-3 text-primary" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    Generando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                    </svg>
+                                                    Generar firma para Outlook (Instalación automática)
+                                                </>
+                                            )}
+                                        </button>
+
+                                        <div className="mt-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
+                                            <p className="text-xs text-blue-800 leading-relaxed italic">
+                                                También puedes instalar esta firma automáticamente en Outlook para Windows.
+                                                Con Outlook cerrado, descarga el archivo, descomprímelo y ejecuta el archivo <strong>instalar_firma.bat</strong>.
+                                                Luego abre Outlook y selecciona la firma desde:<br />
+                                                <span className="font-semibold">Archivo → Opciones → Correo → Firmas.</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 

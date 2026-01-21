@@ -1,0 +1,28 @@
+<?php
+
+/**
+ * ARCHIVO MODIFICADO PARA DESPLIEGUE EN HOSTINGER (public_html)
+ * 1. Sube este archivo a la carpeta 'public_html' de tu servidor.
+ * 2. Asegúrate de que el resto del proyecto esté en una carpeta llamada 'signatures' 
+ *    al mismo nivel que 'public_html'.
+ */
+
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+
+define('LARAVEL_START', microtime(true));
+
+// 1. Determinar si la aplicación está en modo mantenimiento (Ajustado a carpeta 'signatures')
+if (file_exists($maintenance = __DIR__.'/../signatures/storage/framework/maintenance.php')) {
+    require $maintenance;
+}
+
+// 2. Registrar el autoloader de Composer (Ajustado a carpeta 'signatures')
+require __DIR__.'/../signatures/vendor/autoload.php';
+
+// 3. Cargar el Bootstrap de Laravel (Ajustado a carpeta 'signatures')
+/** @var Application $app */
+$app = require_once __DIR__.'/../signatures/bootstrap/app.php';
+
+// 4. Procesar la solicitud
+$app->handleRequest(Request::capture());
