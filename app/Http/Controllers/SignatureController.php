@@ -12,10 +12,10 @@ class SignatureController extends Controller
 {
     public function uploadPhoto(Request $request)
     {
-        // Rate limiting: 3 uploads per minute per user
+        // Rate limiting: 30 uploads per minute per user
         $key = 'upload-photo:' . $request->user()->id;
 
-        if (RateLimiter::tooManyAttempts($key, 3)) {
+        if (RateLimiter::tooManyAttempts($key, 30)) {
             $seconds = RateLimiter::availableIn($key);
             return response()->json([
                 'success' => false,

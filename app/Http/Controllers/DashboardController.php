@@ -62,17 +62,41 @@ class DashboardController extends Controller
         $images = array_unique($matches[1]);
 
         $imageMap = [];
-        // Increase execution time for large downloads
-        set_time_limit(120);
+        // Increase execution time for large downloads, suppress if disabled in hosting
+        @set_time_limit(120);
 
         foreach ($images as $index => $imgUrl) {
             $extension = pathinfo(parse_url($imgUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'png';
             $localName = "image" . ($index + 1) . "." . $extension;
 
             try {
+                // If it's a data URL, extract base64 and save as file
+                if (str_starts_with($imgUrl, 'data:image')) {
+                    preg_match('/^data:image\/(\w+);base64,/', $imgUrl, $typeMatch);
+                    if (!empty($typeMatch)) {
+                        $extension = $typeMatch[1];
+                        if ($extension === 'jpeg')
+                            $extension = 'jpg';
+                        $localName = "image" . ($index + 1) . "." . $extension;
+
+                        $dataStr = substr($imgUrl, strpos($imgUrl, ',') + 1);
+                        $data = base64_decode($dataStr);
+
+                        if ($data) {
+                            File::put($tempDir . '/' . $filesFolderName . '/' . $localName, $data);
+                            $imageMap[$imgUrl] = $filesFolderName . "/" . $localName;
+                        }
+                    }
+                    continue;
+                }
+
                 // Check if the URL is local to the application
                 $appUrl = config('app.url'); // e.g., http://localhost
                 $basePath = parse_url($imgUrl, PHP_URL_PATH);
+
+                if (empty($basePath) || strlen($basePath) > 500) {
+                    continue; // Skip very long or invalid paths
+                }
 
                 // Check if it's a local file in public directory
                 if (file_exists(public_path($basePath))) {

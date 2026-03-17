@@ -19,7 +19,7 @@ export default {
                 primary: '#193074',
                 secondary: '#ffffff',
                 text: '#313131',
-                lightbg: '#d1d1d1',
+                lightbg: '#ebebeb',
             },
         },
     },

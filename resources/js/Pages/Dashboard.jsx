@@ -26,7 +26,6 @@ export default function Dashboard({ userCompany, companies }) {
 
     const [previewData, setPreviewData] = useState(null);
     const [uploading, setUploading] = useState(false);
-    const [isGeneratingZip, setIsGeneratingZip] = useState(false);
     const previewRef = useRef(null);
     const [copied, setCopied] = useState(false);
     const fileInputRef = useRef(null);
@@ -164,51 +163,6 @@ export default function Dashboard({ userCompany, companies }) {
         }
 
         window.getSelection().removeAllRanges();
-    };
-
-    const downloadOutlookZIP = async () => {
-        if (!previewRef.current) return;
-
-        // Validation removed as per user request to use defaults
-
-
-        setIsGeneratingZip(true);
-
-        try {
-            const response = await fetch(route('signature.outlook'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                },
-                body: JSON.stringify({
-                    html: previewRef.current.innerHTML,
-                    name: form.name,
-                    position: form.position,
-                    phone: form.phone,
-                    email: form.email
-                }),
-            });
-
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Firma_Outlook_${form.name.replace(/\s+/g, '_')}.zip`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            } else {
-                alert('Error al generar el archivo. Por favor intenta de nuevo.');
-            }
-        } catch (error) {
-            console.error('Download failed:', error);
-            alert('Error al generar el archivo. Por favor intenta de nuevo.');
-        } finally {
-            setIsGeneratingZip(false);
-        }
     };
 
     return (
@@ -368,7 +322,7 @@ export default function Dashboard({ userCompany, companies }) {
                         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-8 sticky top-6 self-start">
                             <div className="flex justify-between items-center mb-6 border-b pb-2">
                                 <h3 className="text-lg font-bold text-gray-900">Vista Previa</h3>
-                                {previewData && (
+                                {selectedCompany && (
                                     <PrimaryButton
                                         onClick={copyToClipboard}
                                         className="transition-colors bg-primary hover:bg-blue-600"
@@ -379,26 +333,27 @@ export default function Dashboard({ userCompany, companies }) {
                             </div>
 
                             <div className="border border-gray-200 rounded p-4 bg-white overflow-auto flex flex-col items-center min-h-[200px] justify-center">
-                                {previewData ? (
+                                {selectedCompany ? (
                                     <div ref={previewRef}>
                                         {(() => {
-                                            const company = companies?.find(c => c.id === previewData.companyId);
+                                            const company = companies?.find(c => c.id === selectedCompany);
+                                            const currentPreviewData = { ...form, companyId: selectedCompany };
 
                                             // If company has custom HTML template, use DynamicSignature
                                             if (company?.signature_html) {
                                                 return (
                                                     <DynamicSignature
                                                         html={company.signature_html}
-                                                        data={previewData}
+                                                        data={currentPreviewData}
                                                     />
                                                 );
                                             }
 
                                             // Otherwise use hardcoded components based on company ID
                                             if (company?.id === 4) {
-                                                return <SyacsaSignature {...previewData} />;
+                                                return <SyacsaSignature {...currentPreviewData} />;
                                             } else if (company?.id === 2) {
-                                                return <AbsoluteSignature {...previewData} />;
+                                                return <AbsoluteSignature {...currentPreviewData} />;
                                             }
 
                                             // Fallback for unknown companies
@@ -411,50 +366,17 @@ export default function Dashboard({ userCompany, companies }) {
                                     </div>
                                 ) : (
                                     <div className="text-gray-400 text-center italic py-10">
-                                        Haz clic en "Generar Firma" para ver la vista previa
+                                        Selecciona una empresa para ver la vista previa
                                     </div>
                                 )}
                             </div>
 
-                            {previewData && (
+                            {selectedCompany && (
                                 <>
                                     <p className="mt-4 text-sm text-gray-500 text-center">
                                         Haz clic en "Copiar Firma" y pégala (Ctrl+V) en la configuración de tu correo.
                                     </p>
 
-                                    <div className="mt-8 pt-6 border-t border-gray-100">
-                                        <button
-                                            onClick={downloadOutlookZIP}
-                                            disabled={isGeneratingZip}
-                                            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white border-2 border-primary text-primary font-bold rounded-xl hover:bg-primary/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
-                                        >
-                                            {isGeneratingZip ? (
-                                                <>
-                                                    <svg className="animate-spin h-5 w-5 mr-3 text-primary" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                    </svg>
-                                                    Generando...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                                    </svg>
-                                                    Generar firma para Outlook (Instalación automática)
-                                                </>
-                                            )}
-                                        </button>
-
-                                        <div className="mt-4 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
-                                            <p className="text-xs text-blue-800 leading-relaxed italic">
-                                                También puedes instalar esta firma automáticamente en Outlook para Windows.
-                                                Con Outlook cerrado, descarga el archivo, descomprímelo y ejecuta el archivo <strong>instalar_firma.bat</strong>.
-                                                Luego abre Outlook y selecciona la firma desde:<br />
-                                                <span className="font-semibold">Archivo → Opciones → Correo → Firmas.</span>
-                                            </p>
-                                        </div>
-                                    </div>
                                 </>
                             )}
                         </div>

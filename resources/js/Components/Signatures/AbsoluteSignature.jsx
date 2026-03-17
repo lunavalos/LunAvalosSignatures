@@ -55,21 +55,21 @@ export default function AbsoluteSignature({ name: propName, position: propPositi
                                             }}
                                         />
                                     </td>
-                                    <td style={{ padding: 0, verticalAlign: 'middle' }}>
-                                        <table role="presentation" cellPadding="0" cellSpacing="0" border="0" style={{ borderCollapse: 'collapse' }}>
+                                    <td style={{ padding: 0, verticalAlign: 'middle', width: '100%' }}>
+                                        <table role="presentation" width="100%" cellPadding="0" cellSpacing="0" border="0" style={{ borderCollapse: 'collapse', width: '100%' }}>
                                             <tbody>
                                                 <tr>
-                                                    <td>
-                                                        <span style={{ display: 'block', fontSize: '14pt', lineHeight: 1.1, fontWeight: 700, color: '#000000', fontFamily: "'Rubik', Arial, Helvetica, sans-serif" }}>
+                                                    <td style={{ width: '100%' }}>
+                                                        <div style={{ margin: 0, padding: 0, fontSize: '14pt', lineHeight: 1.1, fontWeight: 700, color: '#000000', fontFamily: "'Rubik', Arial, Helvetica, sans-serif", width: '100%' }}>
                                                             {name}
-                                                        </span>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td>
-                                                        <span style={{ display: 'block', fontSize: '10pt', lineHeight: 1.2, fontWeight: 400, color: '#094293', paddingTop: '2px', fontFamily: "'Rubik', Arial, Helvetica, sans-serif" }}>
+                                                    <td style={{ width: '100%' }}>
+                                                        <div style={{ margin: 0, padding: 0, fontSize: '10pt', lineHeight: 1.2, fontWeight: 400, color: '#094293', paddingTop: '2px', fontFamily: "'Rubik', Arial, Helvetica, sans-serif", width: '100%' }}>
                                                             {position}
-                                                        </span>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             </tbody>
